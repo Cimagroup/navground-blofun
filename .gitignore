@@ -1,0 +1,15 @@
+# Virtual environment and workspace and IBloFunMatch copy
+ws
+venv
+IBloFunMatch
+# Images and videos
+*.png
+*.mp4
+# IBloFunMatch output folder 
+build/*
+# Jupyter notebook files 
+.ipynb_checkpoints
+# Output and experiments 
+output/*
+experiments/*
+
