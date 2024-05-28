@@ -9,7 +9,11 @@ IBloFunMatch
 build/*
 # Jupyter notebook files 
 .ipynb_checkpoints
+*.egg-info
 # Output and experiments 
 output/*
 experiments/*
-
+notebooks/experiment_*
+notebooks/output
+# Python files 
+__pycache__
