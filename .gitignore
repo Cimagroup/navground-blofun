@@ -5,13 +5,15 @@ IBloFunMatch
 # Images and videos
 *.png
 *.mp4
+*.gif
 # IBloFunMatch output folder 
 build/*
 # Jupyter notebook files 
 .ipynb_checkpoints
 *.egg-info
 # Output and experiments 
-output/*
+*output/*
+*.out
 experiments/*
 notebooks/experiment_*
 notebooks/output

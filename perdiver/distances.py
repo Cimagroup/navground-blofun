@@ -5,6 +5,15 @@ def distances_weighted_velocities(points, velocities, weight):
     points_velocities = np.hstack((points, velocities*weight))
     return dist.squareform(dist.pdist(points_velocities, "minkowski", p=2))
 
+def distances_corridor_weighted_velocities(points, velocities, weight, length):
+    points_velocities = np.hstack((points, velocities*weight))
+    dist_0 = dist.squareform(dist.pdist(points_velocities, "minkowski", p=2))
+    shift_points_vels = np.array(points_velocities) # make a copy
+    left_pts_idx = shift_points_vels[:,0] < length/2
+    shift_points_vels[left_pts_idx] += [length,0,0,0]
+    dist_1 = dist.squareform(dist.pdist(shift_points_vels, "minkowski", p=2))
+    return np.minimum(dist_0, dist_1)
+
 def trajectory_distance_weighted_velocities(positions, velocities, weight):
     assert(len(positions)>0)
     assert(len(positions)==len(velocities))
@@ -16,6 +25,27 @@ def trajectory_distance_weighted_velocities(positions, velocities, weight):
         # Compare trajectories at same time
         points_vel_compare = positions_velocities_list[idx]
         distances_list.append(dist.cdist(points_vel, points_vel_compare, "minkowski", p=2))
+    # end for
+    distances_arr = np.array(distances_list)
+    return np.min(distances_arr, axis=0)
+
+def trajectory_corridor_distance_weighted_velocities(positions, velocities, weight, length):
+    assert(len(positions)>0)
+    assert(len(positions)==len(velocities))
+    positions_velocities_list = []
+    for idx, points in enumerate(positions):
+        positions_velocities_list.append(np.hstack((points, velocities[idx]*weight)))
+    distances_list = []
+    for idx, points_vel in enumerate(positions_velocities_list):
+        # Compare trajectories at same time
+        points_vel_compare = positions_velocities_list[idx]
+        dist_0 = dist.cdist(points_vel, points_vel_compare, "minkowski", p=2)
+        shift_points_vel_compare = np.array(points_vel_compare)
+        shift_points_vel_compare[shift_points_vel_compare[:,0]<length/2]+=[length, 0, 0, 0]
+        shift_points_vel = np.array(points_vel)
+        shift_points_vel[shift_points_vel[:,0]<length/2]+=[length, 0, 0, 0]
+        dist_1 = dist.cdist(shift_points_vel, shift_points_vel_compare, "minkowski", p=2)
+        distances_list.append(np.minimum(dist_0, dist_1))
     # end for
     distances_arr = np.array(distances_list)
     return np.min(distances_arr, axis=0)
@@ -50,6 +80,21 @@ def trajectory_distance_weighted_velocities_2Dtorus(positions, velocities, weigh
     # end for
     distances_arr = np.array(distances_list)
     return np.min(distances_arr, axis=0)
+
+def compute_distance_matrices_timesteps_corridor(X, Y, vel_X, vel_Y, weight, length):
+    Dist_X = distances_corridor_weighted_velocities(X, vel_X, weight, length)
+    Dist_Y = distances_corridor_weighted_velocities(Y, vel_Y, weight, length)
+    Dist_Z = np.minimum(Dist_X, Dist_Y)
+    return Dist_X, Dist_Y, Dist_Z
+
+def compute_distance_matrices_trajectories_corridor(positions, velocities, start_step, shift_time, weight, length):
+    half_shift=int(shift_time/2)
+    start_X, start_Y = start_step, start_step + half_shift
+    end_X, end_Y = start_step+half_shift, start_step + shift_time
+    Dist_X = trajectory_corridor_distance_weighted_velocities(positions[start_X:end_X], velocities[start_X:end_X], weight, length)
+    Dist_Y = trajectory_corridor_distance_weighted_velocities(positions[start_Y:end_Y], velocities[start_Y:end_Y], weight, length)
+    Dist_Z = np.minimum(Dist_X, Dist_Y)
+    return Dist_X, Dist_Y, Dist_Z
 
 def compute_distance_matrices_trajectories_2D_torus(positions, velocities, start_step, shift_time, weight, side):
     half_shift=int(shift_time/2)

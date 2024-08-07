@@ -5,13 +5,8 @@ import matplotlib as mpl
 import iblofunmatch.inter as ibfm
 output_dir="output"
 
-
-def plot_matching_diagram_trajectories(Dist_X, Dist_Y, Dist_Z, ax, color="blue", print_barcode_n_reps=False):
+def get_matching_diagram(Dist_X, Dist_Y, Dist_Z, output_dir):
     # Compute X, Z barcodes and matching
-    # half_shift=int(shift_time/2)
-    # Dist_X = trajectory_distance_weighted_velocities_2Dtorus(positions[:half_shift], velocities[:half_shift], weight, side)
-    # Dist_Y = trajectory_distance_weighted_velocities_2Dtorus(positions, velocities, weight, side)
-    # Dist_Z = np.minimum(Dist_X, Dist_Y)
     idx_S = list(range(Dist_X.shape[0]))
     # Compute matching from X to Z
     ibfm_out = ibfm.get_IBloFunMatch_subset(Dist_X, Dist_Z, idx_S, output_dir, max_rad=-1, num_it=1, store_0_pm=True, points=False, max_dim=1)
@@ -22,10 +17,14 @@ def plot_matching_diagram_trajectories(Dist_X, Dist_Y, Dist_Z, ax, color="blue",
         bar_Z = ibfm_out["X_barcode_0"][idx_match]
         match_diagram.append([bar_X[1], bar_Z[1]])
     # end for
-    match_diagram = np.array(match_diagram)
+    return np.array(match_diagram)
+
+def plot_matching_diagram(match_diagram, ax, color="blue", print_barcode_n_reps=False, max_val_diag=-1):
     # Plot matching diagram
     ax.scatter(match_diagram[:,0], match_diagram[:,1], color=color)
-    ax.plot([0,np.max(match_diagram)*1.1], [0,np.max(match_diagram)*1.1], color="gray")
+    if max_val_diag<0:
+        max_val_diag = np.max(match_diagram)
+    ax.plot([0,max_val_diag*1.1], [0,max_val_diag*1.1], color="gray")
     if print_barcode_n_reps:
         match_diagram = []
         for idx, bar_X in enumerate(ibfm_out["S_barcode_0"]):
@@ -39,6 +38,38 @@ def plot_matching_diagram_trajectories(Dist_X, Dist_Y, Dist_Z, ax, color="blue",
         print(ibfm_out["S_reps_0"])
     # end printing barcode and representatives
 # end persistence diagram function
+
+# def plot_matching_diagram(Dist_X, Dist_Y, Dist_Z, ax, color="blue", print_barcode_n_reps=False, max_val_diag=-1):
+#     # Compute X, Z barcodes and matching
+#     idx_S = list(range(Dist_X.shape[0]))
+#     # Compute matching from X to Z
+#     ibfm_out = ibfm.get_IBloFunMatch_subset(Dist_X, Dist_Z, idx_S, output_dir, max_rad=-1, num_it=1, store_0_pm=True, points=False, max_dim=1)
+#     # Plot 0 persistence diagram of matching 
+#     match_diagram = []
+#     for idx, bar_X in enumerate(ibfm_out["S_barcode_0"]):
+#         idx_match = ibfm_out["induced_matching_0"][idx]
+#         bar_Z = ibfm_out["X_barcode_0"][idx_match]
+#         match_diagram.append([bar_X[1], bar_Z[1]])
+#     # end for
+#     match_diagram = np.array(match_diagram)
+#     # Plot matching diagram
+#     ax.scatter(match_diagram[:,0], match_diagram[:,1], color=color)
+#     if max_val_diag<0:
+#         max_val_diag = np.max(match_diagram)
+#     ax.plot([0,max_val_diag*1.1], [0,max_val_diag*1.1], color="gray")
+#     if print_barcode_n_reps:
+#         match_diagram = []
+#         for idx, bar_X in enumerate(ibfm_out["S_barcode_0"]):
+#             idx_match = ibfm_out["induced_matching_0"][idx]
+#             bar_Z = ibfm_out["X_barcode_0"][idx_match]
+#             match_diagram.append([bar_X[1], bar_Z[1]])
+#         # end for
+#         match_diagram = np.array(match_diagram)
+        
+#         print(np.array(match_diagram))
+#         print(ibfm_out["S_reps_0"])
+#     # end printing barcode and representatives
+# # end persistence diagram function
 
 
 def plot_sequence(X_list, ax, mark_points=[], color="red"):
@@ -92,3 +123,41 @@ def compute_cumulative_array(div_arr):
             cumulative.append(np.sum(divergence[:i+1]))
         cumulative_list.append(cumulative)
     return np.array(cumulative_list).transpose()
+
+def plot_divergence_diagram(Dist_X, Dist_Y, Dist_Z, ax):
+    idx_S = list(range(int(Dist_X.shape[0])))
+    # Compute induced matchings
+    ibfm_out = [
+        ibfm.get_IBloFunMatch_subset(Dist_X, Dist_Z, idx_S, output_dir, max_rad=-1, num_it=1, store_0_pm=True, points=False, max_dim=1),
+        ibfm.get_IBloFunMatch_subset(Dist_Y, Dist_Z, idx_S, output_dir, max_rad=-1, num_it=1, store_0_pm=True, points=False, max_dim=1)
+    ]
+    # Divergence diagrams 
+    ibfm.plot_XYZ_matching_0(ibfm_out, ax)
+    ax.set_xlim([-4,4])
+    # print persistence divergence 
+    matching_XZ = ibfm_out[0]["induced_matching_0"]
+    matching_YZ = ibfm_out[1]["induced_matching_0"]
+    composition_XY = [matching_YZ.index(i) for i in matching_XZ]
+    endpoints_0 = np.array(ibfm_out[0]["S_barcode_0"][:,1])
+    endpoints_1 = np.array(ibfm_out[1]["S_barcode_0"][:,1])
+    endpoints_1 = endpoints_1[composition_XY]
+    persistence_divergence = np.sum(np.sqrt((endpoints_0-endpoints_1)**2))
+    # print(np.abs(endpoints_0-endpoints_1))
+    # print(persistence_divergence)
+    return ibfm_out
+
+def plot_matched_barcodes(Dist_X, Dist_Z, ax, fig):
+    idx_S = list(range(int(Dist_X.shape[0])))
+    # Compute induced matchings
+    ibfm_out = ibfm.get_IBloFunMatch_subset(Dist_X, Dist_Z, idx_S, output_dir, max_rad=-1, num_it=1, store_0_pm=True, points=False, max_dim=1)
+    # Divergence diagrams 
+    ibfm.plot_matching(ibfm_out, ax, fig, dim=0)
+    return ibfm_out
+
+def plot_two_timesteps(X, Y, ax, X_col="blue", Y_col="red"):
+    # Plot figure
+    ax.scatter(X[:,0], X[:,1], s=20, marker="s", c=X_col, zorder=2, label="X")
+    ax.scatter(Y[:,0], Y[:,1], s=23, marker="x", c=Y_col, zorder=2, label="Y")
+    for edge in zip(X, Y):
+        edge_pts = np.array(edge)
+        ax.plot(edge_pts[:,0], edge_pts[:,1], c="gray", zorder=1)
