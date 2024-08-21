@@ -2,6 +2,7 @@
 ws
 venv
 IBloFunMatch
+tdqual
 # Images and videos
 *.png
 *.mp4
