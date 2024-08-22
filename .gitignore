@@ -13,6 +13,8 @@ build/*
 .ipynb_checkpoints
 *.egg-info
 # Output and experiments 
+*.h5
+*.yaml
 *output/*
 *.out
 experiments/*

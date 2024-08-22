@@ -99,18 +99,18 @@ def compute_divergence_vector(Dist_X, Dist_Y):
     matching_diagram = get_matching_diagram(Dist_X, Dist_Y)
     return  matching_diagram[:,1] - matching_diagram[:,0]
 
-def compute_divergence_Z_arrays(positions, velocities, steps_list, shift_step, weight, side):
-    divergence_list = []
-    Z_barcodes_list = []
-    for start_step in steps_list:
-        Dist_X, Dist_Y, Dist_Z = compute_distance_matrices_trajectories_2D_torus(positions, velocities, start_step, shift_step, weight, side)
-        divergence, Z_barcode = compute_divergence_vector(Dist_X, Dist_Y, Dist_Z)
-        divergence_list.append(divergence)
-        Z_barcodes_list.append(Z_barcode)
-    # want x-coordinate: steps, and y-coordinate: interval idx
-    divergence_arr = np.array(divergence_list).transpose()
-    Z_barcodes_arr = np.array(Z_barcodes_list).transpose()
-    return divergence_arr, Z_barcodes_arr
+# def compute_divergence_Z_arrays(positions, velocities, steps_list, shift_step, weight, side):
+#     divergence_list = []
+#     Z_barcodes_list = []
+#     for start_step in steps_list:
+#         Dist_X, Dist_Y, Dist_Z = compute_distance_matrices_trajectories_2D_torus(positions, velocities, start_step, shift_step, weight, side)
+#         divergence, Z_barcode = compute_divergence_vector(Dist_X, Dist_Y, Dist_Z)
+#         divergence_list.append(divergence)
+#         Z_barcodes_list.append(Z_barcode)
+#     # want x-coordinate: steps, and y-coordinate: interval idx
+#     divergence_arr = np.array(divergence_list).transpose()
+#     Z_barcodes_arr = np.array(Z_barcodes_list).transpose()
+#     return divergence_arr, Z_barcodes_arr
 
 def compute_cumulative_array(div_arr):
     cumulative_list = []
@@ -143,14 +143,6 @@ def compute_cumulative_array(div_arr):
 #     # print(persistence_divergence)
 #     return ibfm_out
 
-def plot_matched_barcodes(Dist_X, Dist_Z, ax, fig):
-    idx_S = list(range(int(Dist_X.shape[0])))
-    # Compute induced matchings
-    ibfm_out = ibfm.get_IBloFunMatch_subset(Dist_X, Dist_Z, idx_S, output_dir, max_rad=-1, num_it=1, store_0_pm=True, points=False, max_dim=1)
-    # Divergence diagrams 
-    ibfm.plot_matching(ibfm_out, ax, fig, dim=0)
-    return ibfm_out
-
 def plot_two_timesteps(X, Y, ax, X_col="blue", Y_col="red"):
     # Plot figure
     ax.scatter(X[:,0], X[:,1], s=20, marker="s", c=X_col, zorder=2, label="X")
@@ -159,12 +151,18 @@ def plot_two_timesteps(X, Y, ax, X_col="blue", Y_col="red"):
         edge_pts = np.array(edge)
         ax.plot(edge_pts[:,0], edge_pts[:,1], c="gray", zorder=1)
 
-def plot_two_timesteps_with_velocities(X, Y, vel_X, vel_Y, ax, X_col="blue", Y_col="red"):
+def plot_two_timesteps_with_velocities(X, Y, vel_X, vel_Y, ax, X_col="blue", Y_col="red", arrow_width=0.05):
     # Plot two timesteps and connecting segment
     plot_two_timesteps(X, Y, ax, X_col=X_col, Y_col=Y_col)
     # Draw velocities 
     for pos, vel in zip(X, vel_X):
-        ax.arrow(pos[0], pos[1], vel[0], vel[1], color=X_col, zorder=2, width=0.05)
+        ax.arrow(pos[0], pos[1], vel[0], vel[1], color=X_col, zorder=2, width=arrow_width)
     
     for pos, vel in zip(Y, vel_Y):
-        ax.arrow(pos[0], pos[1], vel[0], vel[1], color=Y_col, zorder=2, width=0.05)
+        ax.arrow(pos[0], pos[1], vel[0], vel[1], color=Y_col, zorder=2, width=arrow_width)
+
+def same_diagram_scale(ax1, ax2):
+    # Scale both diagrams to same scale 
+    xmax = np.max(np.vstack((ax1.get_xlim(), ax2.get_xlim())))
+    plot_matching_diagram(np.array([[xmax, xmax]]), ax1, color="white")
+    plot_matching_diagram(np.array([[xmax, xmax]]), ax2, color="white")
