@@ -2,7 +2,7 @@ import scipy.spatial.distance as dist
 import numpy as np
 
 def check_points_velocities(points, velocities):
-    if (not np.all(points.shape==velocities.shape)) or (points.shape[1]!=2):
+    if (not np.all(points.shape==velocities.shape)):
         raise(ValueError)
         
 def distances_weighted_velocities(points, velocities, weight):
@@ -27,7 +27,8 @@ def distances_corridor_weighted_velocities(points, velocities, weight, length):
     dist_0 = dist.squareform(dist.pdist(points_velocities, "minkowski", p=2))
     shift_points_vels = np.array(points_velocities) # make a copy
     left_pts_idx = shift_points_vels[:,0] < length/2
-    shift_points_vels[left_pts_idx] += [length,0,0,0]
+    #shift first coordinate by length
+    shift_points_vels[left_pts_idx][:,0] += length
     dist_1 = dist.squareform(dist.pdist(shift_points_vels, "minkowski", p=2))
     return np.minimum(dist_0, dist_1)
 
