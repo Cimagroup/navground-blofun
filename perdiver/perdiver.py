@@ -161,8 +161,9 @@ def plot_two_timesteps_with_velocities(X, Y, vel_X, vel_Y, ax, X_col="blue", Y_c
     for pos, vel in zip(Y, vel_Y):
         ax.arrow(pos[0], pos[1], vel[0], vel[1], color=Y_col, zorder=2, width=arrow_width)
 
-def same_diagram_scale(ax1, ax2):
+def same_diagram_scale(ax_list):
+    """ ax_list is a list of axes to scale to same dimensions"""
     # Scale both diagrams to same scale 
-    xmax = np.max(np.vstack((ax1.get_xlim(), ax2.get_xlim())))
-    plot_matching_diagram(np.array([[xmax, xmax]]), ax1, color="white")
-    plot_matching_diagram(np.array([[xmax, xmax]]), ax2, color="white")
+    xmax = np.max(np.vstack([ax.get_xlim() for ax in ax_list]))
+    for ax in ax_list:
+        plot_matching_diagram(np.array([[xmax, xmax]]), ax, color="white")
