@@ -15,21 +15,24 @@ def distances_weighted_velocities(points, velocities, weight):
     points_velocities = np.hstack((points, velocities*weight))
     return dist.squareform(dist.pdist(points_velocities, "minkowski", p=2))
 
-def distances_corridor_weighted_velocities(points, velocities, weight, length):
+def distances_corridor_weighted_velocities(points, velocities, weight, length, use_velocities=True):
     """ Returns the distance matrix of points in a corridor. Velocities are weighted by the parameter `weight`.
     The metric space corresponds to points given as four coordinates (x, y, wv_x, wv_y) where `w`is the weight, 
     `x`, `y` are the coordinates and `v_x`, `v_y` are the vector components.
     This requieres a specific function because of the periodic boundary conditions.
     `length` is the corridor length.
     """
-    check_points_velocities(points, velocities)
-    points_velocities = np.hstack((points, velocities*weight))
-    dist_0 = dist.squareform(dist.pdist(points_velocities, "minkowski", p=2))
+    if use_velocities:
+        check_points_velocities(points, velocities)
+        points_velocities = np.hstack((points, velocities*weight))
+    else:
+        points_velocities = points
+    dist_0 = dist.squareform(dist.pdist(points_velocities))
     shift_points_vels = np.array(points_velocities) # make a copy
     left_pts_idx = shift_points_vels[:,0] < length/2
     #shift first coordinate by length
     shift_points_vels[left_pts_idx][:,0] += length
-    dist_1 = dist.squareform(dist.pdist(shift_points_vels, "minkowski", p=2))
+    dist_1 = dist.squareform(dist.pdist(shift_points_vels))
     return np.minimum(dist_0, dist_1)
 
 def distances_2Dtorus_weighted_velocities(points, velocities, weight, side):
@@ -70,9 +73,9 @@ def distances_2Dtorus_weighted_velocities(points, velocities, weight, side):
 
 ### Functions that return distance matrices corresponding to a pair of timesteps
 
-def compute_distance_matrices_timesteps_corridor(X, Y, vel_X, vel_Y, weight, length):
-    Dist_X = distances_corridor_weighted_velocities(X, vel_X, weight, length)
-    Dist_Y = distances_corridor_weighted_velocities(Y, vel_Y, weight, length)
+def compute_distance_matrices_timesteps_corridor(X, Y, vel_X, vel_Y, weight, length, use_velocities=True):
+    Dist_X = distances_corridor_weighted_velocities(X, vel_X, weight, length, use_velocities)
+    Dist_Y = distances_corridor_weighted_velocities(Y, vel_Y, weight, length, use_velocities)
     Dist_Z = np.minimum(Dist_X, Dist_Y)
     return Dist_X, Dist_Y, Dist_Z
 
