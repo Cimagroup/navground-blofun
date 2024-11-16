@@ -12,6 +12,8 @@ build/*
 # Jupyter notebook files 
 .ipynb_checkpoints
 *.egg-info
+# Saved matrices
+*.npy
 # Output and experiments 
 *.h5
 *.yaml
@@ -20,5 +22,10 @@ build/*
 experiments/*
 notebooks/experiment_*
 notebooks/output
+# Strange files
+*Zone.Identifier
 # Python files 
 __pycache__
+# Other 
+*/time-warping-corridor/
+

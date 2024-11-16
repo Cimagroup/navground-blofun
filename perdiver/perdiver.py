@@ -1,8 +1,12 @@
 from perdiver.distances import *
 
+import gudhi
+
 import matplotlib as mpl
 
 import tdqual.topological_data_quality_0 as tdqual
+
+from navground.sim.ui.render import image_for_world
 
 def get_matching_diagram(Dist_X, Dist_Y):
     # Compute matching from X to Y
@@ -161,9 +165,75 @@ def plot_two_timesteps_with_velocities(X, Y, vel_X, vel_Y, ax, X_col="blue", Y_c
     for pos, vel in zip(Y, vel_Y):
         ax.arrow(pos[0], pos[1], vel[0], vel[1], color=Y_col, zorder=2, width=arrow_width)
 
+def image_run_timestep_list(run, timestep_list):
+    poses = run.poses
+    image_list = []
+    # Collect all images for world on timesteps
+    for timestep in timestep_list:
+        run.go_to_step(timestep)
+        world = run.world
+        image_list.append(image_for_world(world, background_color="black", relative_margin=0, width=1500))
+    # Combine images 
+    image_sum = np.max(np.array(image_list), axis=0)
+    # Set up background to cream
+    np.any(image_sum==0)
+    zero_positions = np.where(image_sum==0)
+    for x,y in zip(zero_positions[0], zero_positions[1]):
+        image_sum[x,y]=[255,253,208]
+    # end for
+    return image_sum
+
+def plot_image_corridor(run, image, timestep_list, length, width, ax):
+    # # Plot image on axis
+    # ax.plot([0,length], [0,0], linewidth=2, color="black")
+    # ax.plot([0,length], [width,width], linewidth=2, color="black")
+    # Load poses and number of agents
+    poses = run.poses
+    num_agents = poses.shape[1]
+    # Plot image and adjust bounds
+    ax.imshow(image, extent=[0,length, 0, width])
+    ax.set_xlim([0, length])
+    ax.set_ylim([-0.05*width, 1.05*width])
+    # Plot trajectories
+    for i in range(num_agents):
+        for f, t in zip(timestep_list[:-1], timestep_list[1:]):
+            edge = np.array([poses[f,i], poses[t,i]])
+            edge = edge[np.argsort(edge[:,0])]
+            if np.abs(edge[1,0]-edge[0,0]) < length/2:
+                ax.plot(edge[:,0], edge[:,1], color=mpl.colormaps['Set1'](i/(num_agents+3)))
+            else:
+                ax.plot(edge[:,0]+[length,0], edge[:,1], color=mpl.colormaps['Set1'](i/(num_agents+3)))
+                ax.plot(edge[:,0]-[0,length], edge[:,1], color=mpl.colormaps['Set1'](i/(num_agents+3)))
+            # end if-else
+        # end for
+    # end for
+
+def plot_timesteps_corridor(run, timestep_list, length, width, ax):
+    image = image_run_timestep_list(run, timestep_list)
+    plot_image_corridor(run, image, timestep_list, length, width, ax)
+    
 def same_diagram_scale(ax_list):
     """ ax_list is a list of axes to scale to same dimensions"""
     # Scale both diagrams to same scale 
     xmax = np.max(np.vstack([ax.get_xlim() for ax in ax_list]))
     for ax in ax_list:
         plot_matching_diagram(np.array([[xmax, xmax]]), ax, color="white")
+
+
+def bottleneck_matching_diagrams(diag_1, diag_2):
+    """ Returns the bottleneck distance between two matching diagrams with the same size.
+    It first computes that both diagrams have the same number of points. Then it computes the 
+    bottleneck distance by first performing a translation of points and then using the bottleneck 
+    distance from the GUDHI package. 
+    """
+    # Check that both matching diagrams have the same size.
+    if diag_1.shape[0]!= diag_2.shape[0]:
+        print("We assume that both diagrams have the same number of points!")
+        raise ValueError
+    # Translate points by a vertical shift (depending on the matching diagrams)
+    max_val = max(np.max(diag_1), np.max(diag_2))
+    diag_1_shift = diag_1 + [0, 2*max_val]
+    diag_2_shift = diag_2 + [0, 2*max_val]
+    # Use GUDHI to compute bottleneck distance
+    return gudhi.bottleneck_distance(diag_1_shift, diag_2_shift)
+# end bottleneck distance between diagrams
