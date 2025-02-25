@@ -184,9 +184,6 @@ def image_run_timestep_list(run, timestep_list):
     return image_sum
 
 def plot_image_corridor(run, image, timestep_list, length, width, ax):
-    # # Plot image on axis
-    # ax.plot([0,length], [0,0], linewidth=2, color="black")
-    # ax.plot([0,length], [width,width], linewidth=2, color="black")
     # Load poses and number of agents
     poses = run.poses
     num_agents = poses.shape[1]
@@ -207,6 +204,7 @@ def plot_image_corridor(run, image, timestep_list, length, width, ax):
             # end if-else
         # end for
     # end for
+# end def
 
 def plot_timesteps_corridor(run, timestep_list, length, width, ax):
     image = image_run_timestep_list(run, timestep_list)
