@@ -47,18 +47,18 @@ def distances_2Dtorus_weighted_velocities(points, velocities, weight, side):
     positions_velocities_list = []
     # Horizontal shift [side, 0] 
     points_shift = np.array(points)
-    points_shift[points_shift[:,0] < (side/2)] += [side, 0]
+    points_shift[points_shift[:,0] < (side/2)] += [side, 0, 0]
     positions_velocities_list.append(np.hstack((points_shift, velocities*weight)))
     # Vertical shift [0, side]
     points_shift = np.array(points)
-    points_shift[points_shift[:,1] < (side/2)] += [0, side]
+    points_shift[points_shift[:,1] < (side/2)] += [0, side, 0]
     positions_velocities_list.append(np.hstack((points_shift, velocities*weight)))
     # Diagonal shift [side, side]
     points_shift = np.array(points)
     # Take into account torus periodicity
-    points_shift[np.logical_and(points_shift[:,0] <  (side/2), points_shift[:,1] < (side/2))]  += [side, side]
-    points_shift[np.logical_and(points_shift[:,0] <  (side/2), points_shift[:,1] >= (side/2))] += [side, 0]
-    points_shift[np.logical_and(points_shift[:,0] >= (side/2), points_shift[:,1] < (side/2))]  += [0, side]
+    points_shift[np.logical_and(points_shift[:,0] <  (side/2), points_shift[:,1] < (side/2))]  += [side, side, 0]
+    points_shift[np.logical_and(points_shift[:,0] <  (side/2), points_shift[:,1] >= (side/2))] += [side, 0, 0]
+    points_shift[np.logical_and(points_shift[:,0] >= (side/2), points_shift[:,1] < (side/2))]  += [0, side, 0]
     positions_velocities_list.append(np.hstack((points_shift, velocities*weight)))
     ### Now, compute the distances for each instance of points with applied periodic conditions
     distances_list = []
@@ -71,8 +71,10 @@ def distances_2Dtorus_weighted_velocities(points, velocities, weight, side):
     distances_arr = np.array(distances_list)
     return np.min(distances_arr, axis=0)
 
+######################################################################################################
 ### Functions that return distance matrices corresponding to a pair of timesteps
-
+######################################################################################################
+    
 def compute_distance_matrices_timesteps_corridor(X, Y, vel_X, vel_Y, weight, length, use_velocities=True):
     Dist_X = distances_corridor_weighted_velocities(X, vel_X, weight, length, use_velocities)
     Dist_Y = distances_corridor_weighted_velocities(Y, vel_Y, weight, length, use_velocities)

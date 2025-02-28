@@ -1,5 +1,10 @@
+### This file contains a few convenient functions and objects to interact with Navground
+
 import argparse
 from navground import sim, core
+
+import pandas as pd
+import numpy as np
 
 parser = argparse.ArgumentParser(description='Simulation Parameters')
 parser.add_argument('--scenario', type=str, 
@@ -13,7 +18,6 @@ parser.add_argument('--num_steps', type=int, default=100, help='Number of steps 
 parser.add_argument('--time_step', type=float, default=0.1, help='Time step for the simulation')
 parser.add_argument('--num_agents', type=int, default=10, help='Number of agents in the simulation')
 parser.add_argument('--max_speed', type=float, default=1.0, help='Maximum speed of agents')
-parser.add_argument('--optimal_speed', type=float, default=1.0, help='optimal speed')
 parser.add_argument('--optimal_speed_min', type=float, default=1.0, help='Minimal optimal speed')
 parser.add_argument('--optimal_speed_max', type=float, default=1.0, help='Maximum optimal speed')
 parser.add_argument('--radius', type=float, default=0.25, help='Radius of agents')
@@ -65,8 +69,8 @@ def run_navground(args):
             type: {args.behavior}
             optimal_speed:
                 sampler: uniform
-                from: {args.optimal_speed}
-                to: {args.optimal_speed}
+                from: {args.optimal_speed_min}
+                to: {args.optimal_speed_max}
             horizon: 5.0
             safety_margin: {args.safety_margin}
           state_estimation:
@@ -76,4 +80,38 @@ def run_navground(args):
     experiment = sim.load_experiment(yaml)
     experiment.run()
     return experiment.runs
+
+
+### The following functions are for extracting collisions, efficacy and deadlocks from Navground
+### These were taken from the Navground tutorial notebook from the following URL: 
+### https://idsia-robotics.github.io/navground/tutorials/deadlocks_and_collisions.html
+
+def count_deadlocks(deadlock_time, initial_time, final_time):
+    is_deadlocked = np.logical_and(deadlock_time > initial_time, deadlock_time < (final_time - 5.0))
+    return sum(is_deadlocked)
+
+def extract_data(runs, initial_step, final_step):
+    collisions = []
+    deadlocks = []
+    efficacy = []
+    sms = []
+    seeds = []
+    for i in runs.keys():
+        run = runs[i]
+        world = run.world
+        initial_time, final_time = initial_step*run.time_step, final_step*run.time_step
+        deadlocks.append(count_deadlocks(np.array(run.deadlocks), initial_time, final_time))
+        collisions.append(np.sum(np.logical_and(
+            initial_step < run.collisions[:,0], run.collisions[:,0] < final_step
+        )))
+        efficacy.append(np.array(run.efficacy[initial_step:final_step]).mean())
+
+    df = pd.DataFrame({
+        'deadlocks': deadlocks,
+        'collisions': collisions,
+        'efficacy': efficacy})
+    df['safe'] = (df.collisions == 0).astype(int)
+    df['fluid'] = (df.deadlocks == 0).astype(int)
+    df['ok'] = ((df.deadlocks == 0) & (df.collisions == 0)).astype(int)
+    return df
     
