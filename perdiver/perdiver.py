@@ -138,14 +138,33 @@ def plot_two_timesteps_with_velocities(X, Y, vel_X, vel_Y, ax, X_col="blue", Y_c
     for pos, vel in zip(Y, vel_Y):
         ax.arrow(pos[0], pos[1], vel[0], vel[1], color=Y_col, zorder=2, width=arrow_width)
 
-def image_run_timestep_list(run, timestep_list):
+def decorate_red(agent):
+    return {'fill': 'red'}
+
+def decorate_blue(agent):
+    return {'fill': 'blue'}
+
+def image_run_timestep_list(run, timestep_list, to_decorate=False):
     poses = run.poses
     image_list = []
-    # Collect all images for world on timesteps
-    for timestep in timestep_list:
+    # Collect all images for world on timesteps   
+    for i, timestep in enumerate(timestep_list):
         run.go_to_step(timestep)
         world = run.world
-        image_list.append(image_for_world(world, background_color="black", relative_margin=0, width=1500))
+        if to_decorate:
+            if i==0:
+                image_list.append(
+                    image_for_world(world, background_color="black", relative_margin=0, width=1500, decorate=decorate_red)
+                )
+            else:
+                image_list.append(
+                    image_for_world(world, background_color="black", relative_margin=0, width=1500, decorate=decorate_blue)
+                )
+            # end if-else
+        else:
+            image_list.append(
+                image_for_world(world, background_color="black", relative_margin=0, width=1500)
+            )
     # Combine images 
     image_sum = np.max(np.array(image_list), axis=0)
     # Set up background to cream
@@ -233,22 +252,24 @@ def plot_image_cross_torus(run, image, timestep_list, side, ax):
             edge = np.array([poses[f,i], poses[t,i]])
             edge = edge[np.argsort(edge[:,0])]
             if np.abs(edge[1,0]-edge[0,0]) < side/2:
-                if np.abs(edge[0,1]-edge[0,0]) < side/2:
+                if np.abs(edge[1,1]-edge[0,1]) < side/2:
                     ax.plot(edge[:,0], edge[:,1], color=mpl.colormaps['Set1'](i/(num_agents+3)))
                 else: # y periodic
-                    ax.plot(edge[:,0], edge[:,1]+[side,0], color=mpl.colormaps['Set1'](i/(num_agents+3)))
-                    ax.plot(edge[:,0], edge[:,1]-[side,0], color=mpl.colormaps['Set1'](i/(num_agents+3)))
+                    up_or_down = 1 if edge[1,1] < edge[0,1] else -1 # 1 is up, -1 is going downards
+                    ax.plot(edge[:,0], edge[:,1] - [up_or_down * side, 0], color=mpl.colormaps['Set1'](i/(num_agents+3)))
+                    ax.plot(edge[:,0], edge[:,1] + [0, up_or_down * side], color=mpl.colormaps['Set1'](i/(num_agents+3)))
                 # end else
             else: # x periodic
-                ax.plot(edge[:,0]+[side,0], edge[:,1], color=mpl.colormaps['Set1'](i/(num_agents+3)))
-                ax.plot(edge[:,0]-[0,side], edge[:,1], color=mpl.colormaps['Set1'](i/(num_agents+3)))
+                left_or_right = 1 if edge[1,0] < edge[0,0] else -1 # 1 is up, -1 is going downards
+                ax.plot(edge[:,0] - [left_or_right * side, 0], edge[:,1], color=mpl.colormaps['Set1'](i/(num_agents+3)))
+                ax.plot(edge[:,0] + [0, left_or_right * side], edge[:,1], color=mpl.colormaps['Set1'](i/(num_agents+3)))
             # end if-else
         # end for
     # end for
 # end def
 
-def plot_timesteps_cross_torus(run, timestep_list, side, ax):
-    image = image_run_timestep_list(run, timestep_list)
+def plot_timesteps_cross_torus(run, timestep_list, side, ax, to_decorate=False):
+    image = image_run_timestep_list(run, timestep_list, to_decorate)
     plot_image_cross_torus(run, image, timestep_list, side, ax)
 
 
